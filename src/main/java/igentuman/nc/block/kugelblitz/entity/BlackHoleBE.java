@@ -225,9 +225,9 @@ public class BlackHoleBE extends NuclearCraftBE {
     }
 
     public void meltdown() {
-        getLevel().explode(null,  getBlockPos().getX(), getBlockPos().getY(), getBlockPos().getZ(), 10, Level.ExplosionInteraction.TNT);
+        /*getLevel().explode(null,  getBlockPos().getX(), getBlockPos().getY(), getBlockPos().getZ(), 10, Level.ExplosionInteraction.TNT);
         setRemoved();
-        getLevel().setBlockAndUpdate(getBlockPos(), AIR.defaultBlockState());
+        getLevel().setBlockAndUpdate(getBlockPos(), AIR.defaultBlockState());*/
     }
 
     public void evaporate() {

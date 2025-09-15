@@ -3,16 +3,16 @@
   "inputFluids": [
     {
       "amount": 100,
-      "tag": "forge:steam"
+      "tag": "forge:exhaust_steam"
     }
   ],
   "outputFluids": [
     {
       "amount": 100,
-      "tag": "minecraft:water"
+      "tag": "forge:technical_water"
     }
   ],
-  "powerModifier": 20,
+  "powerModifier": 4,
   "radiation": 1.0,
   "timeModifier": 0.005
 }

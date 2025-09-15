@@ -17,8 +17,9 @@ import igentuman.nc.recipes.NcRecipeType;
 import igentuman.nc.recipes.ingredient.FluidStackIngredient;
 import igentuman.nc.recipes.ingredient.ItemStackIngredient;
 import igentuman.nc.recipes.type.NcRecipe;
-import igentuman.nc.setup.registration.NCFluids;
+import igentuman.nc.setup.registration.NCFluids;	
 import igentuman.nc.util.capability.CustomEnergyStorage;
+import igentuman.nc.setup.registration.FissionFuel;
 import igentuman.nc.util.annotation.NBTField;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -57,7 +58,7 @@ import static igentuman.nc.handler.config.CommonConfig.GTCEU_CONFIG;
 import static igentuman.nc.handler.config.FissionConfig.FISSION_CONFIG;
 import static igentuman.nc.multiblock.fission.FissionReactorRegistration.FISSION_BLOCKS;
 import static igentuman.nc.multiblock.fission.FissionReactorRegistration.heatsinks;
-import static igentuman.nc.setup.registration.FissionFuel.ITEM_PROPERTIES;
+import static igentuman.nc.setup.registration.FissionFuel.*;
 import static igentuman.nc.setup.registration.NCSounds.FISSION_REACTOR;
 import static igentuman.nc.setup.registration.NcParticleTypes.RADIATION;
 import static igentuman.nc.util.ModUtil.*;
@@ -157,6 +158,8 @@ public class FissionControllerBE extends MultiblockControllerBE {
     private List<FluidStack>  allowedCoolantOutputs;
     @NBTField
     public boolean canAcceptFluids = false;
+    public long newstorage = 0;
+
     public FissionControllerBE(BlockPos pPos, BlockState pBlockState) {
         super(FissionReactorRegistration.FISSION_BE.get(NAME).get(),pPos, pBlockState);
         contentHandler = new SidedContentHandler(
@@ -253,7 +256,7 @@ public class FissionControllerBE extends MultiblockControllerBE {
     }
 
     private CustomEnergyStorage createEnergy() {
-        return new CustomEnergyStorage(100000000, 0, 100000000) {
+        return new CustomEnergyStorage(2048000000, 0, 2048000000) {
             @Override
             protected void onEnergyChanged() {
                 setChanged();
@@ -289,6 +292,8 @@ public class FissionControllerBE extends MultiblockControllerBE {
         }
         double heatEff =  cooling * FISSION_CONFIG.BOILING_MULTIPLIER.get()/100D * heatMultiplier;
 
+        if(heatSinksCooling() == 0)
+                heatEff = heatPerTick; 
         if(hasCoolant()) {
             FluidStack steam = boilingRecipe.getOutputFluids().get(0);
             FluidStack coolant = boilingRecipe.getInputFluids(0).get(0);
@@ -322,7 +327,11 @@ public class FissionControllerBE extends MultiblockControllerBE {
                 boilingPenalty = coolingPerTick()*(conversion/ops)-coolingPerTick();
             }
         } else {
-            boilingPenalty = coolingPerTick()*0.75;
+			if(heatPerTick > 2048000000 / 2000) {
+				newstorage += heatPerTick * 2000;
+			}
+			else energyStorage.addEnergy((int)Math.round(heatPerTick * 2000));
+			//boilingPenalty = coolingPerTick()*0.75;
         }
     }
     public void toggleMode() {
@@ -330,7 +339,7 @@ public class FissionControllerBE extends MultiblockControllerBE {
             isSteamMode = false;
             return;
         }
-        toggleModeTimer = 200;
+        toggleModeTimer = 60;
     }
 
     private LazyOptional<SolidFissionReactorPeripheral> peripheralCap;
@@ -421,6 +430,7 @@ public class FissionControllerBE extends MultiblockControllerBE {
     public void tickServer() {
 
         heatMultiplier = 0;
+        if(newstorage > 0)	newstorage = sendOutHugePower(newstorage);
         if(NuclearCraft.instance.isNcBeStopped || isRemoved()) {
             irradiationHeat = 0;
             controllerEnabled = false;
@@ -450,8 +460,15 @@ public class FissionControllerBE extends MultiblockControllerBE {
             } else {
                 powered = false;
             }
+            if (contentHandler().fluidHandler.getFluidInSlot(0).getAmount() > 0 && heatPerTick == 0){
+				FluidStack flood = contentHandler().fluidHandler.getFluidInSlot(0).copy();
+				flood.setAmount(contentHandler().fluidHandler.tanks.get(0).getCapacity());
+				contentHandler().fluidHandler.tanks.get(0).fill(flood, IFluidHandler.FluidAction.EXECUTE);
+			}
+
             trackChanges(coolDown());
             handleMeltdown();
+
         } else {
             //if reactor was broken during processing, contaminate area
             if(isProcessing() && wasFormed) {
@@ -497,7 +514,7 @@ public class FissionControllerBE extends MultiblockControllerBE {
             isSteamMode = false;
             return;
         }
-        if(toggleModeTimer < 201) {
+        if(toggleModeTimer < 61) {
             toggleModeTimer--;
             changed = true;
             if (toggleModeTimer < 1) {
@@ -525,6 +542,8 @@ public class FissionControllerBE extends MultiblockControllerBE {
     }
 
     private void handleMeltdown() {
+        if(heatSinksCooling() == 0)
+                heat = 0; 
         if (heat > getMaxHeat()) {
             BlockPos explosionPos = getBlockPos().relative(getFacing(), 2);
             List<Long> fuelCells = new ArrayList<>(getMultiblock().fuelCells);
@@ -699,6 +718,14 @@ public class FissionControllerBE extends MultiblockControllerBE {
 
     public double heatPerTick() {
         heatPerTick = recipeInfo().heat * (cellsHeatMult + moderatorsHeat()) + irradiationHeat;
+		if(getCurrentFuel().getItem().toString().contains("298") && !hasCoolant())
+			heatPerTick = contentHandler().fluidHandler.tanks.get(1).getCapacity() / 10;
+		if(getCurrentFuel().getItem().toString().contains("298") && hasCoolant())
+			heatPerTick = Math.min(contentHandler().fluidHandler.tanks.get(1).getCapacity() / boilingRecipe.getOutputFluids().get(0).getAmount() / 2 * boilingRecipe.conversionRate,
+		contentHandler().fluidHandler.tanks.get(0).getCapacity() / boilingRecipe.getInputFluids(0).get(0).getAmount() / 2 * boilingRecipe.conversionRate);
+		if(getCurrentFuel().getItem().toString().contains("298") && ForgeRegistries.FLUIDS.getKey(contentHandler().fluidHandler.getFluidInSlot(0).getFluid()).getPath().contains("technical"))
+			heatPerTick = Math.min(contentHandler().fluidHandler.tanks.get(1).getCapacity() / 2 / boilingRecipe.getOutputFluids().get(0).getAmount() / 2 * boilingRecipe.conversionRate,
+		contentHandler().fluidHandler.tanks.get(0).getCapacity() / 2 / boilingRecipe.getInputFluids(0).get(0).getAmount() / 2 * boilingRecipe.conversionRate);
         return heatPerTick;
     }
 

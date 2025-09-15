@@ -90,6 +90,12 @@ public class NuclearCraftBE extends BlockEntity {
             transferEnergyToSide(direction);
         }
     }
+    protected long sendOutHugePower(long power) {
+        for (Direction direction : Direction.values()) {
+            power = transferHugeEnergyToSide(direction, power);
+        }
+        return power;
+    }
 
     protected void pullEnergyFromSide(Direction direction) {
         BlockEntity be = level.getExistingBlockEntity(worldPosition.relative(direction));
@@ -147,6 +153,42 @@ public class NuclearCraftBE extends BlockEntity {
         );
     }
 
+    protected long transferHugeEnergyToSide(Direction direction, long power) {
+        BlockEntity be = level.getExistingBlockEntity(worldPosition.relative(direction));
+        if (be == null) {
+            return power;
+        }
+        for(int i = 0; i < 25; i++){
+	if(power > 2048000000L){
+        	be.getCapability(ForgeCapabilities.ENERGY, direction.getOpposite()).map(handler -> {
+                    	if (handler.canReceive()) {
+                        	handler.receiveEnergy(2048000000, false);
+                        	setChanged();
+                        	return false;
+                   	 } else {
+                       	 return true;
+                    	}
+		}
+        	);
+	power -= 2048000000L;
+	}else{
+	int newstore = (int)power;
+        	be.getCapability(ForgeCapabilities.ENERGY, direction.getOpposite()).map(handler -> {
+                    	if (handler.canReceive()) {
+                        	handler.receiveEnergy((int)newstore, false);
+                        	setChanged();
+                        	return false;
+                   	 } else {
+                       	 return true;
+                    	}
+		}
+        	);
+	power = 0;
+	break;
+	}
+	}
+         return power;
+    }
     //for the moment input and output energy tiers are the same
     public long getInputEnergyTier() {
         return 2L; // Default to 2, can be overridden in subclasses

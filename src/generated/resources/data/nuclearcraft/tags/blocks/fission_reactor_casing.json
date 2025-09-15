@@ -4,6 +4,11 @@
     "nuclearcraft:fission_reactor_controller",
     "nuclearcraft:fission_reactor_glass",
     "nuclearcraft:fission_reactor_port",
-    "nuclearcraft:irradiator"
+    "nuclearcraft:irradiator",
+    "nuclearcraft:fission_reactor_irradiation_chamber",
+	"nuclearcraft:graphite_block",
+	"nuclearcraft:steam_turbine",
+	"beyonddimensions:net_energy_pathway",
+	"nuclearcraft:elite_storage_container"
   ]
 }

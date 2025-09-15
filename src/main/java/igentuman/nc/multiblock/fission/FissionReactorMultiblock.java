@@ -149,6 +149,8 @@ public class FissionReactorMultiblock extends AbstractMultiblock {
 
     @Override
     public void validate() {
+        debugLog("=== Starting Fission Reactor validation at " + controllerPos.toShortString() + " ===");
+        
         heatSinkCooling = 0;
         moderatorAttachments = 0;
         extraFuelCells = 0;
@@ -167,6 +169,7 @@ public class FissionReactorMultiblock extends AbstractMultiblock {
         directFuelCellConnectionPos.clear();
         secondFuelCellConnectionPos.clear();
         
+        debugLog("Cleared fission reactor specific caches and counters");
         super.validate();
         updateAABB();
     }
@@ -187,6 +190,11 @@ public class FissionReactorMultiblock extends AbstractMultiblock {
         //Stage 1: Index all inner blocks
         debugLog("Stage 1: Indexing inner blocks");
         indexInnerBlocks();
+        debugLog("Stage 1 complete - Result: " + validationResult + 
+                ", Fuel cells: " + fuelCells.size() + 
+                ", Moderators: " + allModerators.size() + 
+                ", Heat sinks: " + allHeatSinks.size() + 
+                ", Irradiators: " + irradiators.size());
         if(validationResult != ValidationResult.VALID) {
             debugLog("VALIDATION FAILED - Inner structure invalid: " + validationResult + ", clearing stats");
             clearStats();
@@ -203,7 +211,7 @@ public class FissionReactorMultiblock extends AbstractMultiblock {
         
         //Stage 3: index irradiators and count irradiation lines
         debugLog("Stage 3: Indexing irradiators");
-        indexIrradiators();
+        //indexIrradiators();
         debugLog("Stage 3 complete - Irradiation lines: " + irradiationLines + 
                 ", Valid irradiators: " + validIrradiators.size() + "/" + irradiators.size());
 
@@ -333,12 +341,17 @@ public class FissionReactorMultiblock extends AbstractMultiblock {
     private int getFuelCellModerators(long pos) {
         BlockPos fuelCellPos = BlockPos.of(pos);
         int count = 0;
+        validIrradiators.clear();
         for(Direction d : Direction.values()) {
             BlockPos toCheck = fuelCellPos.relative(d);
             if(isModerator(toCheck)) {
                 addIfNotExists(toCheck.asLong(), moderators);
                 addDirectFuelCellConnection(toCheck);
                 count++;
+            }
+            if(isModerator(fuelCellPos.relative(d)) && isIrradiator(fuelCellPos.relative(d, 2))) {
+                irradiationLines++;
+                addIfNotExists(fuelCellPos.relative(d, 2).asLong(), validIrradiators);
             }
         }
         return count;
@@ -457,10 +470,10 @@ public class FissionReactorMultiblock extends AbstractMultiblock {
 
                 if(isModerator(blockState)) {
                     if(isFuelCell(toCheck.relative(d, l + 1))) {
-                        count ++;
+                        count +=2;
                         break;
                     }
-                } else {
+                }else {
                     break;
                 }
             }

@@ -3,16 +3,16 @@
   "inputFluids": [
     {
       "amount": 100,
-      "tag": "forge:steam"
+      "tag": "forge:helium"
     }
   ],
   "outputFluids": [
     {
       "amount": 100,
-      "tag": "minecraft:water"
+      "tag": "forge:liquid_helium"
     }
   ],
-  "powerModifier": 20,
+  "powerModifier": 360,
   "radiation": 1.0,
   "timeModifier": 0.005
 }

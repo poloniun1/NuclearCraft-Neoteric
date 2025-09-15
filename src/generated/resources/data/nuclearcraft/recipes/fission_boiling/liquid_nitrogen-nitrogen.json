@@ -1,0 +1,16 @@
+{
+  "type": "nuclearcraft:fission_boiling",
+  "heatRequired": 100.0,
+  "inputFluids": [
+    {
+      "amount": 1,
+      "tag": "forge:liquid_nitrogen"
+    }
+  ],
+  "outputFluids": [
+    {
+      "amount": 1,
+      "tag": "forge:nitrogen"
+    }
+  ]
+}

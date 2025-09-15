@@ -611,7 +611,10 @@ public class FusionCoreBE extends MultiblockControllerBE {
                 changeReactorHeat(-(coolantRecipe.getCoolingRate() / size) * actualOps);
                 extractCoolant(actualOps);
             }
-        }
+        }else {
+           energyStorage().addEnergy((int)(reactorHeat *1000));
+           changeReactorHeat(-reactorHeat);
+            }
     }
 
     protected void changeReactorHeat(double amount) {
@@ -793,9 +796,11 @@ public class FusionCoreBE extends MultiblockControllerBE {
             return;
         }
         if (reactorHeat > getMaxHeat() && plasmaTemperature > 10000) {
-            meltDown();
+            /*meltDown();
             plasmaTemperature /= 5D;
-            reactorHeat /= 2D;
+            reactorHeat /= 2D;*/
+            reactorHeat = getMaxHeat();
+            plasmaTemperature = 10000;
         }
     }
 
