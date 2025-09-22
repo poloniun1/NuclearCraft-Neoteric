@@ -795,8 +795,8 @@ public class NCRecipes extends RecipeProvider {
                 .pattern("PCP")
                 .define('P', NC_PARTS.get("plate_basic").get())
                 .define('C', LITHIUM_ION_CELL.get())
-                .define('S', NC_PARTS.get("coil_magnesium_diboride").get())
-                .unlockedBy("item", has(NC_PARTS.get("coil_magnesium_diboride").get()))
+                .define('S', NC_PARTS.get("coil_copper").get())
+                .unlockedBy("item", has(LITHIUM_ION_CELL.get()))
                 .save(consumer, rl("basic_lithium_ion_battery"));
 
         ShapedRecipeBuilder.shaped(RecipeCategory.MISC, ENERGY_BLOCKS.get("advanced_lithium_ion_battery").get())
@@ -1011,8 +1011,9 @@ public class NCRecipes extends RecipeProvider {
 
         ShapedRecipeBuilder.shaped(RecipeCategory.MISC, NC_ITEMS.get("water_collector").get())
                 .pattern("PIP")
-                .pattern("B B")
+                .pattern("GBG")
                 .pattern("PIP")
+                .define('G', forgePlate(Materials.thermoconducting))
                 .define('P', NC_PARTS.get("plate_basic").get())
                 .define('B', NAUTILUS_SHELL)
                 .define('I', WATER_BUCKET)
